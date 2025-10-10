@@ -104,8 +104,8 @@ if __name__ == "__main__":
     # Example parameters
     NUM_PROCESSES = 5
     NUM_RESOURCES = 3
-    TOTAL_RESOURCES = np.array([10, 5, 7])
-    NUM_SAMPLES = 5000
+    TOTAL_RESOURCES = np.array([20,15,20])
+    NUM_SAMPLES = 7000
 
     # Generate dataset using Banker's algorithm
     dataset_banker = create_dataset(NUM_SAMPLES, NUM_PROCESSES, NUM_RESOURCES, TOTAL_RESOURCES, balance=True, method="banker")
@@ -118,3 +118,110 @@ if __name__ == "__main__":
     dataset_rag.to_csv("deadlock_dataset_rag.csv", index=False)
 
     print("\nDatasets saved successfully with descriptive headers!")
+
+
+# Of course. The existing parameter values in your script are a great starting point for a classic deadlock simulation scenario. Here’s a breakdown of what they represent and how you might change them depending on your goals.
+
+# The values you have are:
+
+# ```python
+# NUM_PROCESSES = 5
+# NUM_RESOURCES = 3
+# TOTAL_RESOURCES = np.array([10, 5, 7])
+# NUM_SAMPLES = 5000
+# ```
+
+# -----
+
+# ### \#\# Understanding the Current Parameters
+
+# The current settings model a small-scale operating system environment, typical of textbook examples for deadlock.
+
+#   * `NUM_PROCESSES = 5`: Represents **5 different programs or threads** running concurrently and competing for resources. This is a manageable number that is complex enough to create interesting scenarios.
+#   * `NUM_RESOURCES = 3`: Represents **3 distinct types of resources**. You can think of these as "CPU cores," "RAM in GB," and "Printers."
+#   * `TOTAL_RESOURCES = np.array([10, 5, 7])`: This is the most critical parameter. It defines the **total available instances** of each resource type.
+#       * There are **10** instances of Resource 0 (e.g., 10 CPU cores).
+#       * There are **5** instances of Resource 1 (e.g., 5 GB of RAM).
+#       * There are **7** instances of Resource 2 (e.g., 7 printers).
+#   * `NUM_SAMPLES = 5000`: This specifies that you want to generate a dataset with **5,000 different system states (rows)**. This is a decent size for training a basic machine learning model.
+
+# **In short, your current parameters create a balanced environment where deadlocks are possible but not constant, making it ideal for generating a useful dataset.**
+
+# -----
+
+# ### \#\# How to Adjust Parameters for Different Scenarios
+
+# Here are some suggestions for what to set the parameters to, depending on your objective.
+
+# #### 🎯 **Goal: To Generate More Unsafe/Deadlocked States**
+
+# To make deadlocks more likely, you need to create resource **scarcity**. You do this by reducing the total available resources relative to the number of processes.
+
+# **Suggested Changes:**
+
+#   * Keep `NUM_PROCESSES = 5` and `NUM_RESOURCES = 3`.
+#   * Decrease `TOTAL_RESOURCES`. The new totals should be low enough that processes are very likely to block each other while waiting.
+
+# <!-- end list -->
+
+# ```python
+# # Creates high contention for resources
+# TOTAL_RESOURCES = np.array([7, 4, 5])
+# ```
+
+# #### 🎯 **Goal: To Generate More Safe States**
+
+# To make the system safer, you need to create resource **abundance**. If there are plenty of resources to go around, processes rarely have to wait.
+
+# **Suggested Changes:**
+
+#   * Keep `NUM_PROCESSES = 5` and `NUM_RESOURCES = 3`.
+#   * Significantly increase `TOTAL_RESOURCES`.
+
+# <!-- end list -->
+
+# ```python
+# # Creates low contention, most states will be safe
+# TOTAL_RESOURCES = np.array([20, 15, 20])
+# ```
+
+# #### 🎯 **Goal: To Create a More Complex Problem**
+
+# For training a more robust machine learning model, you might want to increase the complexity by adding more processes and resources. This increases the number of features in your dataset.
+
+# **Suggested Changes:**
+
+#   * Increase `NUM_PROCESSES` and `NUM_RESOURCES`.
+#   * Adjust `TOTAL_RESOURCES` to match the new scale. A good rule of thumb is to have the total instances be roughly 1.5 to 2 times the number of processes for each resource type to maintain a balanced environment.
+#   * Increase `NUM_SAMPLES` to capture a wider variety of states.
+
+# <!-- end list -->
+
+# ```python
+# # A more complex scenario
+# NUM_PROCESSES = 8
+# NUM_RESOURCES = 4
+# TOTAL_RESOURCES = np.array([12, 10, 8, 15])
+# NUM_SAMPLES = 20000
+# ```
+
+# #### 🎯 **Goal: Quick Test or Debugging**
+
+# If you just want to run the script quickly to make sure it works, use very small numbers.
+
+# **Suggested Changes:**
+
+#   * Use minimal processes and resources.
+#   * Generate a very small number of samples.
+
+# <!-- end list -->
+
+# ```python
+# # For a quick test run
+# NUM_PROCESSES = 3
+# NUM_RESOURCES = 2
+# TOTAL_RESOURCES = np.array([5, 4])
+# NUM_SAMPLES = 100
+# ```
+
+# For your current purpose of generating a standard dataset for analysis or ML, **the values you already have are an excellent and well-balanced choice.**

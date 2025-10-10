@@ -10,4 +10,7 @@ On Linux/macOS: source ai-deadlock-env/bin/activate
 
 pip install requirements.txt
 
+# To run project :
+python run_classifier.py
+
 
