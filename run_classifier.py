@@ -34,8 +34,8 @@ def main():
     if os.path.exists(banker_file) or os.path.exists(rag_file):
         try:
             df = classifier.load_data_from_csv(
-                banker_csv_path=banker_file if os.path.exists(banker_file) else None,
-                rag_csv_path=rag_file if os.path.exists(rag_file) else None,
+                deadlock_dataset_banker=banker_file if os.path.exists(banker_file) else None,
+                deadlock_dataset_rag=rag_file if os.path.exists(rag_file) else None,
                 combined=True
             )
             print("✓ Successfully loaded your generated datasets!")
@@ -71,8 +71,8 @@ def main():
             
             try:
                 df = classifier.load_data_from_csv(
-                    banker_csv_path=banker_path if banker_path else None,
-                    rag_csv_path=rag_path if rag_path else None,
+                    deadlock_dataset_banker=banker_path if banker_path else None,
+                    deadlock_dataset_rag=rag_path if rag_path else None,
                     combined=True
                 )
             except Exception as e:
@@ -129,6 +129,7 @@ def main():
             if tuned_models:
                 print(f"✓ Tuned {len(tuned_models)} models. Re-evaluating...")
                 
+                classifier.models.update(tuned_models)
                 # Re-evaluate with tuned models
                 X_train2, X_test2, y_train2, y_test2 = classifier.train_and_evaluate(
                     X, y, test_size=0.2, cv_folds=5, scaling='standard'

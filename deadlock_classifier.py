@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, StratifiedKFold
 from sklearn.preprocessing import StandardScaler, RobustScaler, MinMaxScaler
-from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_score, 
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, precision_score, recall_score, f1_score, 
                            roc_auc_score, classification_report, confusion_matrix, 
                            roc_curve, precision_recall_curve)
 from sklearn.ensemble import (RandomForestClassifier, GradientBoostingClassifier, 
@@ -23,6 +23,60 @@ import seaborn as sns
 import joblib
 import warnings
 warnings.filterwarnings('ignore')
+
+# In deadlock_classifier.py
+
+# 🟢 ADD at the top of the file
+try:
+    from imblearn.over_sampling import SMOTE
+    IMBLEARN_AVAILABLE = True
+except ImportError:
+    IMBLEARN_AVAILABLE = False
+    print("Warning: imbalanced-learn not available. For better performance on imbalanced data, run: pip install imbalanced-learn")
+
+# ... inside the DeadlockClassifier class ...
+
+    def train_and_evaluate(self, X, y, test_size=0.2, cv_folds=5, scaling='standard', use_smote=True): # 🟢 ADDED use_smote
+        """
+        Complete training and evaluation pipeline
+        """
+        # ... (keep the initial print statements) ...
+        
+        # Split data
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            X, y, test_size=test_size, random_state=self.random_state, 
+            stratify=y
+        )
+        
+        # ... (keep the dataset information prints) ...
+
+        # 🟢 ADD SMOTE LOGIC HERE
+        if use_smote and IMBLEARN_AVAILABLE:
+            print("\nApplying SMOTE to balance the training data...")
+            smote = SMOTE(random_state=self.random_state)
+            X_train_resampled, y_train_resampled = smote.fit_resample(self.X_train, self.y_train)
+            print(f"  - Original training samples: {len(self.X_train)}")
+            print(f"  - Resampled training samples: {len(X_train_resampled)}")
+            print(f"  - New class distribution: {np.bincount(y_train_resampled)}")
+            self.X_train = X_train_resampled
+            self.y_train = y_train_resampled
+        
+        # Scaling
+        if scaling == 'standard':
+            self.scaler = StandardScaler()
+        elif scaling == 'robust':
+            self.scaler = RobustScaler()
+        elif scaling == 'minmax':
+            self.scaler = MinMaxScaler()
+        else:
+            raise ValueError("Invalid scaling method. Choose 'standard', 'robust', or 'minmax'.")
+
+        self.X_train = self.scaler.fit_transform(self.X_train)
+        self.X_test = self.scaler.transform(self.X_test)
+
+        # ... (rest of the function continues as before) ...
+        # Make sure to use self.X_train and self.y_train from this point on,
+        # which will be the resampled versions if SMOTE was applied.
 
 # Optional imports with fallback
 try:
@@ -77,13 +131,13 @@ class DeadlockClassifier:
         self.y_train = None
         self.y_test = None
     
-    def load_data_from_csv(self, banker_csv_path=None, rag_csv_path=None, combined=True):
+    def load_data_from_csv(self, deadlock_dataset_banker=None, deadlock_dataset_rag=None, combined=True):
         """
         Load your generated datasets from CSV files
         
         Args:
-            banker_csv_path (str): Path to banker's algorithm dataset
-            rag_csv_path (str): Path to RAG dataset
+            deadlock_dataset_banker (str): Path to banker's algorithm dataset
+            deadlock_dataset_rag (str): Path to RAG dataset
             combined (bool): Whether to combine both datasets
             
         Returns:
@@ -91,27 +145,27 @@ class DeadlockClassifier:
         """
         data = []
         
-        if banker_csv_path:
+        if deadlock_dataset_banker:
             try:
-                banker_df = pd.read_csv(banker_csv_path)
+                banker_df = pd.read_csv(deadlock_dataset_banker)
                 banker_df['algorithm'] = 'banker'
                 data.append(banker_df)
                 print(f"✓ Loaded Banker's data: {len(banker_df)} samples")
                 print(f"  - Safe states: {len(banker_df[banker_df['label']==1])}")
                 print(f"  - Unsafe states: {len(banker_df[banker_df['label']==0])}")
             except FileNotFoundError:
-                print(f"✗ File not found: {banker_csv_path}")
+                print(f"✗ File not found: {deadlock_dataset_banker}")
         
-        if rag_csv_path:
+        if deadlock_dataset_rag:
             try:
-                rag_df = pd.read_csv(rag_csv_path)
+                rag_df = pd.read_csv(deadlock_dataset_rag)
                 rag_df['algorithm'] = 'rag'
                 data.append(rag_df)
                 print(f"✓ Loaded RAG data: {len(rag_df)} samples")
                 print(f"  - Safe states: {len(rag_df[rag_df['label']==1])}")
                 print(f"  - Unsafe states: {len(rag_df[rag_df['label']==0])}")
             except FileNotFoundError:
-                print(f"✗ File not found: {rag_csv_path}")
+                print(f"✗ File not found: {deadlock_dataset_rag}")
         
         if not data:
             raise ValueError("No data files could be loaded. Please check file paths.")
@@ -501,6 +555,7 @@ class DeadlockClassifier:
                     'cv_f1_mean': cv_scores.mean(),
                     'cv_f1_std': cv_scores.std(),
                     'test_accuracy': accuracy_score(self.y_test, y_pred),
+                    'test_balanced_accuracy': balanced_accuracy_score(self.y_test, y_pred), 
                     'test_precision': precision_score(self.y_test, y_pred),
                     'test_recall': recall_score(self.y_test, y_pred),
                     'test_f1': f1_score(self.y_test, y_pred),
@@ -600,7 +655,7 @@ class DeadlockClassifier:
                     self.models[model_name],
                     param_grids[model_name],
                     cv=3,
-                    scoring='f1',
+                    scoring='precision',
                     n_jobs=-1,
                     verbose=0
                 )
